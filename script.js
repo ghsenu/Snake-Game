@@ -4,6 +4,22 @@ const ctx = canvas.getContext("2d");
 const gridSize = 20;
 const tileCount = canvas.width / gridSize;
 
+// Helper function for rounded rectangles (compatible with all browsers)
+function drawRoundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
 // Game tuning
 const START_SPEED_MS = 140;
 const MIN_SPEED_MS = 60;
@@ -142,59 +158,205 @@ function drawGrid() {
 }
 
 function drawFood() {
-  // a slightly fancy food: square + small shine
+  // Cute apple food
   const px = food.x * gridSize;
   const py = food.y * gridSize;
+  const centerX = px + gridSize / 2;
+  const centerY = py + gridSize / 2;
 
-  ctx.fillStyle = "red";
-  ctx.fillRect(px, py, gridSize, gridSize);
-
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.fillRect(px + 4, py + 4, 6, 6);
+  // Apple body (red circle)
+  ctx.fillStyle = "#ff4444";
+  ctx.beginPath();
+  ctx.arc(centerX, centerY + 2, 8, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Apple shine
+  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.beginPath();
+  ctx.arc(centerX - 2, centerY - 1, 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Apple stem
+  ctx.fillStyle = "#8B4513";
+  ctx.fillRect(centerX - 1, py + 2, 2, 4);
+  
+  // Apple leaf
+  ctx.fillStyle = "#4CAF50";
+  ctx.beginPath();
+  ctx.arc(centerX + 4, py + 4, 2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
+// Wave animation counter
+let waveTime = 0;
+
 function drawSnake() {
-  // Body
-  ctx.fillStyle = "lime";
-  for (let i = 1; i < snake.length; i++) {
+  waveTime += 0.3; // Increment wave animation
+  
+  // Body with waving effect
+  for (let i = snake.length - 1; i >= 1; i--) {
     const part = snake[i];
-    ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize, gridSize);
+    
+    // Calculate wave offset based on position in snake and time
+    const waveOffset = Math.sin(waveTime + i * 0.5) * 3;
+    
+    // Determine wave direction (perpendicular to movement)
+    let offsetX = 0, offsetY = 0;
+    if (dx !== 0) {
+      offsetY = waveOffset; // Wave up/down when moving left/right
+    } else {
+      offsetX = waveOffset; // Wave left/right when moving up/down
+    }
+    
+    const px = part.x * gridSize + offsetX;
+    const py = part.y * gridSize + offsetY;
+    
+    // Gradient color from head to tail
+    const gradient = 1 - (i / snake.length) * 0.4;
+    const green = Math.floor(255 * gradient);
+    ctx.fillStyle = `rgb(50, ${green}, 100)`;
+    
+    // Draw rounded body segment
+    drawRoundedRect(px + 1, py + 1, gridSize - 2, gridSize - 2, 5);
+    
+    // Add shine to body
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    drawRoundedRect(px + 3, py + 3, 6, 4, 2);
   }
 
-  // Head (slightly different style + eyes)
+  // Head (cute round face)
   const head = snake[0];
   const hx = head.x * gridSize;
   const hy = head.y * gridSize;
+  const centerX = hx + gridSize / 2;
+  const centerY = hy + gridSize / 2;
 
-  ctx.fillStyle = "#2dff6a";
-  ctx.fillRect(hx, hy, gridSize, gridSize);
+  // Draw round head
+  ctx.fillStyle = "#50ff80";
+  drawRoundedRect(hx, hy, gridSize, gridSize, 6);
+  
+  // Head shine
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.beginPath();
+  ctx.arc(hx + 6, hy + 5, 3, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Determine facing direction for eyes
-  // dx, dy indicate movement
-  const eyeOffset = 5;
-  const eyeSize = 3;
-
-  // eye positions for each direction
-  let e1 = { x: hx + eyeOffset, y: hy + eyeOffset };
-  let e2 = { x: hx + gridSize - eyeOffset - eyeSize, y: hy + eyeOffset };
+  // Cute eyes with sparkle
+  const eyeSize = 5;
+  const pupilSize = 2;
+  let e1, e2;
 
   if (dx === 1) { // right
-    e1 = { x: hx + gridSize - eyeOffset - eyeSize, y: hy + eyeOffset };
-    e2 = { x: hx + gridSize - eyeOffset - eyeSize, y: hy + gridSize - eyeOffset - eyeSize };
+    e1 = { x: centerX + 3, y: centerY - 4 };
+    e2 = { x: centerX + 3, y: centerY + 4 };
   } else if (dx === -1) { // left
-    e1 = { x: hx + eyeOffset, y: hy + eyeOffset };
-    e2 = { x: hx + eyeOffset, y: hy + gridSize - eyeOffset - eyeSize };
+    e1 = { x: centerX - 5, y: centerY - 4 };
+    e2 = { x: centerX - 5, y: centerY + 4 };
   } else if (dy === 1) { // down
-    e1 = { x: hx + eyeOffset, y: hy + gridSize - eyeOffset - eyeSize };
-    e2 = { x: hx + gridSize - eyeOffset - eyeSize, y: hy + gridSize - eyeOffset - eyeSize };
-  } else if (dy === -1) { // up
-    e1 = { x: hx + eyeOffset, y: hy + eyeOffset };
-    e2 = { x: hx + gridSize - eyeOffset - eyeSize, y: hy + eyeOffset };
+    e1 = { x: centerX - 4, y: centerY + 3 };
+    e2 = { x: centerX + 4, y: centerY + 3 };
+  } else { // up
+    e1 = { x: centerX - 4, y: centerY - 5 };
+    e2 = { x: centerX + 4, y: centerY - 5 };
   }
 
-  ctx.fillStyle = "black";
-  ctx.fillRect(e1.x, e1.y, eyeSize, eyeSize);
-  ctx.fillRect(e2.x, e2.y, eyeSize, eyeSize);
+  // White of eyes
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(e1.x, e1.y, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(e2.x, e2.y, eyeSize, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pupils (looking in movement direction)
+  ctx.fillStyle = "#333";
+  ctx.beginPath();
+  ctx.arc(e1.x + dx * 1.5, e1.y + dy * 1.5, pupilSize, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(e2.x + dx * 1.5, e2.y + dy * 1.5, pupilSize, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye sparkles (cute!)
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(e1.x - 1, e1.y - 1, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(e2.x - 1, e2.y - 1, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cute blush marks (pink circles on cheeks)
+  ctx.fillStyle = "rgba(255, 150, 150, 0.5)";
+  if (dx === 1) { // right
+    ctx.beginPath();
+    ctx.arc(centerX, centerY - 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (dx === -1) { // left
+    ctx.beginPath();
+    ctx.arc(centerX - 2, centerY - 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX - 2, centerY + 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else { // up or down
+    ctx.beginPath();
+    ctx.arc(centerX - 6, centerY, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX + 6, centerY, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cute smile
+  ctx.strokeStyle = "#2a5a3a";
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = "round";
+  
+  if (dx === 1) { // right
+    ctx.beginPath();
+    ctx.arc(centerX + 6, centerY, 3, 0.3 * Math.PI, 0.7 * Math.PI);
+    ctx.stroke();
+  } else if (dx === -1) { // left
+    ctx.beginPath();
+    ctx.arc(centerX - 6, centerY, 3, 0.3 * Math.PI, 0.7 * Math.PI);
+    ctx.stroke();
+  } else if (dy === 1) { // down
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 6, 3, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+  } else { // up
+    ctx.beginPath();
+    ctx.arc(centerX, centerY - 6, 3, 1.1 * Math.PI, 1.9 * Math.PI);
+    ctx.stroke();
+  }
+  
+  // Little tongue when moving (cute detail)
+  if (!gameOver && !paused) {
+    const tongueWiggle = Math.sin(waveTime * 2) * 1;
+    ctx.fillStyle = "#ff6b8a";
+    if (dx === 1) {
+      ctx.beginPath();
+      ctx.arc(hx + gridSize + 2, centerY + tongueWiggle, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (dx === -1) {
+      ctx.beginPath();
+      ctx.arc(hx - 2, centerY + tongueWiggle, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (dy === 1) {
+      ctx.beginPath();
+      ctx.arc(centerX + tongueWiggle, hy + gridSize + 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(centerX + tongueWiggle, hy - 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 }
 
 function drawHUD() {
