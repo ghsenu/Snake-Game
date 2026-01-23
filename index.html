@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game</title>
+  <style>
+    body {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      margin:0;
+      background:#111;
+      font-family: Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    .wrap {
+      position: relative;
+      width: 420px;
+      max-width: 92vw;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      background:#000;
+      border:2px solid #444;
+      display:block;
+    }
+
+    /* Mobile controls */
+    .controls {
+      display: grid;
+      grid-template-columns: 70px 70px 70px;
+      grid-template-rows: 70px 70px 70px;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+    .btn {
+      border: 1px solid #444;
+      background: #1b1b1b;
+      color: #fff;
+      border-radius: 14px;
+      font-size: 22px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .btn:active { transform: scale(0.98); }
+
+    .hint {
+      color: #aaa;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* Hide mobile controls on large screens (optional) */
+    @media (min-width: 900px) {
+      .controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="game" width="400" height="400"></canvas>
+
+    <div class="controls" aria-label="Mobile Controls">
+      <div></div>
+      <button cla
