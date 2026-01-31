@@ -49,6 +49,10 @@ function beep(freq = 440, duration = 0.06, type = "square", volume = 0.05) {
 }
 
 function playEat() { beep(880, 0.05, "square", 0.06); }
+function playGoldenEat() { 
+  beep(1320, 0.08, "sine", 0.08);
+  setTimeout(() => beep(1760, 0.06, "sine", 0.06), 80);
+}
 function playTurn() { beep(520, 0.03, "square", 0.03); }
 function playGameOver() {
   beep(200, 0.12, "sawtooth", 0.05);
@@ -87,6 +91,7 @@ function randomFood() {
     const f = {
       x: Math.floor(Math.random() * tileCount),
       y: Math.floor(Math.random() * tileCount),
+      type: Math.random() < 0.15 ? 'golden' : 'normal' // 15% chance for golden apple
     };
     const onSnake = snake?.some(p => p.x === f.x && p.y === f.y);
     if (!onSnake) return f;
@@ -127,8 +132,13 @@ function update() {
 
   // food eaten
   if (newHead.x === food.x && newHead.y === food.y) {
-    score++;
-    playEat();
+    if (food.type === 'golden') {
+      score += 3;
+      playGoldenEat();
+    } else {
+      score++;
+      playEat();
+    }
     food = randomFood();
 
     // update speed as score grows
@@ -158,33 +168,85 @@ function drawGrid() {
 }
 
 function drawFood() {
-  // Cute apple food
   const px = food.x * gridSize;
   const py = food.y * gridSize;
   const centerX = px + gridSize / 2;
   const centerY = py + gridSize / 2;
 
-  // Apple body (red circle)
-  ctx.fillStyle = "#ff4444";
-  ctx.beginPath();
-  ctx.arc(centerX, centerY + 2, 8, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Apple shine
-  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-  ctx.beginPath();
-  ctx.arc(centerX - 2, centerY - 1, 2, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Apple stem
-  ctx.fillStyle = "#8B4513";
-  ctx.fillRect(centerX - 1, py + 2, 2, 4);
-  
-  // Apple leaf
-  ctx.fillStyle = "#4CAF50";
-  ctx.beginPath();
-  ctx.arc(centerX + 4, py + 4, 2, 0, Math.PI * 2);
-  ctx.fill();
+  if (food.type === 'golden') {
+    // Golden apple with sparkle animation
+    const sparkleTime = Date.now() * 0.01;
+    
+    // Golden apple body
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
+    gradient.addColorStop(0, "#ffed4e");
+    gradient.addColorStop(0.7, "#ff9800");
+    gradient.addColorStop(1, "#f57c00");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 2, 9, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Golden shine (brighter)
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.beginPath();
+    ctx.arc(centerX - 2, centerY - 1, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Golden stem
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(centerX - 1, py + 1, 2, 5);
+    
+    // Golden leaf
+    ctx.fillStyle = "#66BB6A";
+    ctx.beginPath();
+    ctx.arc(centerX + 4, py + 3, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Sparkle effects around golden apple
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    for (let i = 0; i < 4; i++) {
+      const angle = sparkleTime + i * Math.PI / 2;
+      const sparkleX = centerX + Math.cos(angle) * 12;
+      const sparkleY = centerY + Math.sin(angle) * 12;
+      const sparkleSize = 1 + Math.sin(sparkleTime * 3 + i) * 0.5;
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Golden glow effect
+    ctx.shadowColor = "#ffed4e";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "rgba(255, 237, 78, 0.3)";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 2, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+  } else {
+    // Regular red apple
+    ctx.fillStyle = "#ff4444";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 2, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Apple shine
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.beginPath();
+    ctx.arc(centerX - 2, centerY - 1, 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Apple stem
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(centerX - 1, py + 2, 2, 4);
+    
+    // Apple leaf
+    ctx.fillStyle = "#4CAF50";
+    ctx.beginPath();
+    ctx.arc(centerX + 4, py + 4, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // Wave animation counter
