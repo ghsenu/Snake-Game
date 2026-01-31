@@ -515,34 +515,151 @@ function drawSnake() {
 }
 
 function drawHUD() {
-  // Text background for better readability
-  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  // Animated background for score display
+  const time = Date.now() * 0.003;
+  const gradient = ctx.createLinearGradient(5, 5, 125, 50);
+  gradient.addColorStop(0, `rgba(46, 125, 50, ${0.8 + Math.sin(time) * 0.1})`);
+  gradient.addColorStop(1, `rgba(27, 94, 32, ${0.9 + Math.sin(time + 1) * 0.1})`);
+  ctx.fillStyle = gradient;
   ctx.fillRect(5, 5, 120, 45);
   
-  ctx.fillStyle = "white";
-  ctx.font = "16px Arial";
+  // Score display with game-style font
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#2e7d32";
+  ctx.lineWidth = 2;
+  ctx.font = "bold 16px 'Courier New', monospace";
+  
   const level = Math.floor(score / SPEED_UP_EVERY) + 1;
-  ctx.fillText(`Score: ${score}`, 10, 20);
-  ctx.fillText(`Level: ${level}`, 10, 40);
+  const scoreText = `SCORE: ${score}`;
+  const levelText = `LEVEL: ${level}`;
+  
+  // Text with outline effect
+  ctx.strokeText(scoreText, 10, 22);
+  ctx.fillText(scoreText, 10, 22);
+  ctx.strokeText(levelText, 10, 42);
+  ctx.fillText(levelText, 10, 42);
 
   if (paused && !gameOver) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(100, 180, 200, 70);
-    ctx.fillStyle = "white";
-    ctx.font = "24px Arial";
-    ctx.fillText("PAUSED", 150, 200);
-    ctx.font = "14px Arial";
-    ctx.fillText("Press Space / ⏯️ to Resume", 110, 230);
+    // Decorative pause screen with garden theme
+    const pauseBoxX = 80, pauseBoxY = 160, pauseBoxW = 240, pauseBoxH = 100;
+    
+    // Decorative background with garden pattern
+    const pauseGradient = ctx.createRadialGradient(200, 210, 0, 200, 210, 120);
+    pauseGradient.addColorStop(0, "rgba(76, 175, 80, 0.95)");
+    pauseGradient.addColorStop(1, "rgba(27, 94, 32, 0.95)");
+    ctx.fillStyle = pauseGradient;
+    drawRoundedRect(pauseBoxX, pauseBoxY, pauseBoxW, pauseBoxH, 15);
+    
+    // Decorative border
+    ctx.strokeStyle = "#ffeb3b";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(pauseBoxX, pauseBoxY, pauseBoxW, pauseBoxH, 15);
+    ctx.stroke();
+    
+    // Animated "PAUSED" text
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#1b5e20";
+    ctx.lineWidth = 3;
+    ctx.font = "bold 32px 'Impact', 'Arial Black', sans-serif";
+    ctx.textAlign = "center";
+    
+    const pauseScale = 1 + Math.sin(time * 2) * 0.05;
+    ctx.save();
+    ctx.translate(200, 195);
+    ctx.scale(pauseScale, pauseScale);
+    ctx.strokeText("⏸️ PAUSED ⏸️", 0, 0);
+    ctx.fillText("⏸️ PAUSED ⏸️", 0, 0);
+    ctx.restore();
+    
+    // Instruction text
+    ctx.font = "bold 14px 'Trebuchet MS', sans-serif";
+    ctx.fillStyle = "#ffeb3b";
+    ctx.strokeStyle = "#1b5e20";
+    ctx.lineWidth = 2;
+    ctx.strokeText("Press SPACE or ⏯️ to Resume", 200, 230);
+    ctx.fillText("Press SPACE or ⏯️ to Resume", 200, 230);
+    
+    ctx.textAlign = "left";
   }
 
   if (gameOver) {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(110, 180, 180, 70);
-    ctx.fillStyle = "white";
-    ctx.font = "28px Arial";
-    ctx.fillText("GAME OVER", 120, 200);
-    ctx.font = "16px Arial";
-    ctx.fillText("Press R to Restart", 130, 230);
+    // Epic game over screen with decorative elements
+    const gameOverBoxX = 60, gameOverBoxY = 140, gameOverBoxW = 280, gameOverBoxH = 120;
+    
+    // Dramatic background with pulsing effect
+    const pulseIntensity = 0.8 + Math.sin(time * 3) * 0.2;
+    const gameOverGradient = ctx.createRadialGradient(200, 200, 0, 200, 200, 140);
+    gameOverGradient.addColorStop(0, `rgba(183, 28, 28, ${pulseIntensity})`);
+    gameOverGradient.addColorStop(0.7, `rgba(136, 14, 79, ${pulseIntensity * 0.9})`);
+    gameOverGradient.addColorStop(1, `rgba(49, 27, 146, ${pulseIntensity * 0.8})`);
+    ctx.fillStyle = gameOverGradient;
+    drawRoundedRect(gameOverBoxX, gameOverBoxY, gameOverBoxW, gameOverBoxH, 20);
+    
+    // Glowing border effect
+    ctx.shadowColor = "#ff5722";
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = "#ff8a65";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(gameOverBoxX, gameOverBoxY, gameOverBoxW, gameOverBoxH, 20);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // Animated "GAME OVER" text with dramatic effect
+    ctx.textAlign = "center";
+    ctx.font = "bold 36px 'Impact', 'Arial Black', sans-serif";
+    
+    // Multiple text layers for depth
+    const textScale = 1 + Math.sin(time * 2) * 0.03;
+    ctx.save();
+    ctx.translate(200, 185);
+    ctx.scale(textScale, textScale);
+    
+    // Shadow layer
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillText("💀 GAME OVER 💀", 3, 3);
+    
+    // Outline layer
+    ctx.strokeStyle = "#b71c1c";
+    ctx.lineWidth = 4;
+    ctx.strokeText("💀 GAME OVER 💀", 0, 0);
+    
+    // Main text
+    const textGradient = ctx.createLinearGradient(-100, -20, 100, 20);
+    textGradient.addColorStop(0, "#ff5252");
+    textGradient.addColorStop(0.5, "#ffffff");
+    textGradient.addColorStop(1, "#ff5252");
+    ctx.fillStyle = textGradient;
+    ctx.fillText("💀 GAME OVER 💀", 0, 0);
+    
+    ctx.restore();
+    
+    // Restart instruction with glow effect
+    ctx.font = "bold 18px 'Trebuchet MS', sans-serif";
+    ctx.fillStyle = "#4caf50";
+    ctx.strokeStyle = "#2e7d32";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "#4caf50";
+    ctx.shadowBlur = 5;
+    ctx.strokeText("🔄 Press R to Restart 🔄", 200, 225);
+    ctx.fillText("🔄 Press R to Restart 🔄", 200, 225);
+    ctx.shadowBlur = 0;
+    
+    // Decorative sparkles around game over box
+    for (let i = 0; i < 8; i++) {
+      const angle = time + i * Math.PI / 4;
+      const sparkleX = 200 + Math.cos(angle) * 160;
+      const sparkleY = 200 + Math.sin(angle) * 80;
+      const sparkleSize = 2 + Math.sin(time * 4 + i) * 1;
+      
+      ctx.fillStyle = `hsl(${(time * 50 + i * 45) % 360}, 100%, 70%)`;
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    ctx.textAlign = "left";
   }
 }
 
