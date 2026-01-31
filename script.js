@@ -149,10 +149,24 @@ function update() {
 }
 
 // ---- Drawing ----
-function drawGrid() {
-  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+function drawBackground() {
+  // Base grass color
+  ctx.fillStyle = "#2d5016";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Grass texture pattern
+  for (let x = 0; x < canvas.width; x += 4) {
+    for (let y = 0; y < canvas.height; y += 4) {
+      if (Math.random() > 0.7) {
+        ctx.fillStyle = `hsl(${85 + Math.random() * 15}, ${40 + Math.random() * 20}%, ${25 + Math.random() * 10}%)`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+  }
+  
+  // Garden paths (subtle grid lines)
+  ctx.strokeStyle = "rgba(139, 120, 93, 0.3)";
   ctx.lineWidth = 1;
-
   for (let x = 0; x <= canvas.width; x += gridSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -165,6 +179,44 @@ function drawGrid() {
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
   }
+  
+  // Small flowers scattered around
+  const flowerPositions = [
+    {x: 50, y: 80}, {x: 150, y: 120}, {x: 320, y: 60},
+    {x: 280, y: 200}, {x: 80, y: 300}, {x: 350, y: 320},
+    {x: 30, y: 180}, {x: 200, y: 350}, {x: 180, y: 30},
+    {x: 370, y: 150}, {x: 120, y: 250}, {x: 300, y: 100}
+  ];
+  
+  flowerPositions.forEach((pos, i) => {
+    const time = Date.now() * 0.002;
+    const sway = Math.sin(time + i) * 0.5;
+    
+    // Flower stem
+    ctx.strokeStyle = "#2d5016";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y + 3);
+    ctx.lineTo(pos.x + sway, pos.y - 2);
+    ctx.stroke();
+    
+    // Flower petals
+    const colors = ["#ff69b4", "#ffff00", "#ff4500", "#9370db", "#00ced1", "#ff1493"];
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.arc(pos.x + sway, pos.y - 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Flower center
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(pos.x + sway, pos.y - 2, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawGrid() {
+  // Grid is now drawn as part of garden paths in drawBackground
 }
 
 function drawFood() {
@@ -463,6 +515,10 @@ function drawSnake() {
 }
 
 function drawHUD() {
+  // Text background for better readability
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(5, 5, 120, 45);
+  
   ctx.fillStyle = "white";
   ctx.font = "16px Arial";
   const level = Math.floor(score / SPEED_UP_EVERY) + 1;
@@ -470,6 +526,9 @@ function drawHUD() {
   ctx.fillText(`Level: ${level}`, 10, 40);
 
   if (paused && !gameOver) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(100, 180, 200, 70);
+    ctx.fillStyle = "white";
     ctx.font = "24px Arial";
     ctx.fillText("PAUSED", 150, 200);
     ctx.font = "14px Arial";
@@ -477,6 +536,8 @@ function drawHUD() {
   }
 
   if (gameOver) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(110, 180, 180, 70);
     ctx.fillStyle = "white";
     ctx.font = "28px Arial";
     ctx.fillText("GAME OVER", 120, 200);
@@ -486,10 +547,7 @@ function drawHUD() {
 }
 
 function draw() {
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  drawGrid();
+  drawBackground();
   drawFood();
   drawSnake();
   drawHUD();
