@@ -203,13 +203,38 @@ function drawFood() {
     ctx.arc(centerX + 4, py + 3, 2.5, 0, Math.PI * 2);
     ctx.fill();
     
-    // Sparkle effects around golden apple
-    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    // Enhanced sparkle effects around golden apple
+    // Main rotating sparkles
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    for (let i = 0; i < 6; i++) {
+      const angle = sparkleTime + i * Math.PI / 3;
+      const sparkleX = centerX + Math.cos(angle) * 14;
+      const sparkleY = centerY + Math.sin(angle) * 14;
+      const sparkleSize = 1.5 + Math.sin(sparkleTime * 4 + i) * 0.8;
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Secondary counter-rotating sparkles
+    ctx.fillStyle = "rgba(255, 237, 78, 0.7)";
     for (let i = 0; i < 4; i++) {
-      const angle = sparkleTime + i * Math.PI / 2;
-      const sparkleX = centerX + Math.cos(angle) * 12;
-      const sparkleY = centerY + Math.sin(angle) * 12;
-      const sparkleSize = 1 + Math.sin(sparkleTime * 3 + i) * 0.5;
+      const angle = -sparkleTime * 0.7 + i * Math.PI / 2;
+      const sparkleX = centerX + Math.cos(angle) * 10;
+      const sparkleY = centerY + Math.sin(angle) * 10;
+      const sparkleSize = 0.8 + Math.sin(sparkleTime * 5 + i) * 0.4;
+      ctx.beginPath();
+      ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Tiny inner sparkles
+    ctx.fillStyle = "rgba(255, 255, 255, 1)";
+    for (let i = 0; i < 3; i++) {
+      const angle = sparkleTime * 2 + i * Math.PI * 2 / 3;
+      const sparkleX = centerX + Math.cos(angle) * 6;
+      const sparkleY = centerY + Math.sin(angle) * 6;
+      const sparkleSize = 0.5 + Math.sin(sparkleTime * 6 + i) * 0.3;
       ctx.beginPath();
       ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
       ctx.fill();
@@ -225,7 +250,9 @@ function drawFood() {
     ctx.shadowBlur = 0;
     
   } else {
-    // Regular red apple
+    // Regular red apple with subtle sparkles
+    const subtleSparkleTime = Date.now() * 0.005;
+    
     ctx.fillStyle = "#ff4444";
     ctx.beginPath();
     ctx.arc(centerX, centerY + 2, 8, 0, Math.PI * 2);
@@ -246,6 +273,20 @@ function drawFood() {
     ctx.beginPath();
     ctx.arc(centerX + 4, py + 4, 2, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Subtle sparkles for regular apples (less prominent)
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    for (let i = 0; i < 3; i++) {
+      const angle = subtleSparkleTime + i * Math.PI * 2 / 3;
+      const sparkleX = centerX + Math.cos(angle) * 11;
+      const sparkleY = centerY + Math.sin(angle) * 11;
+      const sparkleSize = 0.5 + Math.sin(subtleSparkleTime * 3 + i) * 0.3;
+      if (sparkleSize > 0.7) { // Only show when sparkle is bright enough
+        ctx.beginPath();
+        ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 }
 
