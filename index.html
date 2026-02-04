@@ -2,66 +2,143 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Snake Game</title>
   <style>
     body {
       display:flex;
       justify-content:center;
       align-items:center;
-      height:100vh;
+      min-height:100vh;
       margin:0;
+      padding: 10px;
       background:#111;
       font-family: Arial, sans-serif;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none;
+      touch-action: manipulation;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
     .wrap {
       position: relative;
-      width: 420px;
-      max-width: 92vw;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     canvas {
       width: 100%;
+      max-width: 400px;
       height: auto;
       background:#000;
       border:2px solid #444;
       display:block;
+      aspect-ratio: 1;
+      touch-action: manipulation;
     }
 
     /* Mobile controls */
     .controls {
       display: grid;
-      grid-template-columns: 70px 70px 70px;
-      grid-template-rows: 70px 70px 70px;
-      gap: 10px;
+      grid-template-columns: 80px 80px 80px;
+      grid-template-rows: 80px 80px 80px;
+      gap: 15px;
       justify-content: center;
-      margin-top: 14px;
+      margin-top: 20px;
+      padding: 10px;
     }
     .btn {
-      border: 1px solid #444;
-      background: #1b1b1b;
+      border: 2px solid #555;
+      background: linear-gradient(135deg, #2a2a2a, #1b1b1b);
       color: #fff;
-      border-radius: 14px;
-      font-size: 22px;
+      border-radius: 18px;
+      font-size: 28px;
       display:flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn:active { transform: scale(0.98); }
+    .btn:active { 
+      transform: scale(0.95); 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      background: linear-gradient(135deg, #1b1b1b, #0a0a0a);
+    }
+    .btn:hover {
+      border-color: #666;
+      background: linear-gradient(135deg, #333, #222);
+    }
 
     .hint {
       color: #aaa;
-      font-size: 12px;
+      font-size: 14px;
       text-align: center;
-      margin-top: 10px;
+      margin-top: 15px;
+      padding: 0 20px;
+      line-height: 1.4;
     }
 
-    /* Hide mobile controls on large screens (optional) */
-    @media (min-width: 900px) {
+    /* Responsive design for different screen sizes */
+    @media (max-width: 480px) {
+      body { padding: 5px; }
+      .controls {
+        grid-template-columns: 70px 70px 70px;
+        grid-template-rows: 70px 70px 70px;
+        gap: 12px;
+      }
+      .btn { font-size: 24px; }
+      .hint { font-size: 12px; }
+    }
+
+    @media (max-height: 600px) and (orientation: landscape) {
+      body { 
+        flex-direction: row;
+        align-items: stretch;
+        padding: 10px;
+      }
+      .wrap {
+        flex-direction: row;
+        max-width: none;
+        width: 100%;
+        gap: 20px;
+      }
+      canvas {
+        max-width: 50vmin;
+        max-height: 80vh;
+      }
+      .controls {
+        margin-top: 0;
+        margin-left: 20px;
+      }
+      .hint {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+        font-size: 11px;
+      }
+    }
+
+    /* Hide mobile controls on large screens with mouse */
+    @media (min-width: 900px) and (hover: hover) {
       .controls { display: none; }
+    }
+
+    /* Swipe instruction */
+    .swipe-hint {
+      color: #888;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 8px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -82,6 +159,7 @@
     </div>
 
     <p class="hint">Use arrow keys or buttons · Space to pause · R to restart</p>
+    <p class="swipe-hint">💡 Swipe on canvas to control direction</p>
   </div>
 
   <script src="script.js"></script>

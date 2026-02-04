@@ -29,6 +29,26 @@ let snake, food, dx, dy, score, gameOver, paused;
 let intervalId = null;
 let directionLock = false; // prevents double-turn in one tick
 
+// Mobile enhancement variables
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+let lastTouchTime = 0;
+const MIN_SWIPE_DISTANCE = 30;
+const MAX_SWIPE_TIME = 1000;
+
+// Haptic feedback function
+function vibrate(duration = 50) {
+  try {
+    if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  } catch (e) {
+    // Vibration not supported, ignore
+  }
+}
+
 // ---- Sound (Web Audio) ----
 let audioCtx = null;
 function beep(freq = 440, duration = 0.06, type = "square", volume = 0.05) {
@@ -48,15 +68,23 @@ function beep(freq = 440, duration = 0.06, type = "square", volume = 0.05) {
   }
 }
 
-function playEat() { beep(880, 0.05, "square", 0.06); }
+function playEat() { 
+  beep(880, 0.05, "square", 0.06);
+  vibrate(30);
+}
 function playGoldenEat() { 
   beep(1320, 0.08, "sine", 0.08);
   setTimeout(() => beep(1760, 0.06, "sine", 0.06), 80);
+  vibrate([50, 30, 80]);
 }
-function playTurn() { beep(520, 0.03, "square", 0.03); }
+function playTurn() { 
+  beep(520, 0.03, "square", 0.03);
+  vibrate(20);
+}
 function playGameOver() {
   beep(200, 0.12, "sawtooth", 0.05);
   setTimeout(() => beep(140, 0.15, "sawtooth", 0.05), 120);
+  vibrate([100, 50, 100, 50, 200]);
 }
 
 // ---- Helpers ----
@@ -650,6 +678,54 @@ function draw() {
   drawHUD();
 }
 
+// ---- Swipe Detection ----
+function handleTouchStart(e) {
+  e.preventDefault();
+  const touch = e.touches[0] || e.changedTouches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  lastTouchTime = Date.now();
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  touchEndX = touch.clientX;
+  touchEndY = touch.clientY;
+  
+  const touchTime = Date.now() - lastTouchTime;
+  if (touchTime > MAX_SWIPE_TIME) return;
+  
+  handleSwipe();
+}
+
+function handleSwipe() {
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  const absDeltaX = Math.abs(deltaX);
+  const absDeltaY = Math.abs(deltaY);
+  
+  // Check if swipe is long enough
+  if (Math.max(absDeltaX, absDeltaY) < MIN_SWIPE_DISTANCE) return;
+  
+  // Determine swipe direction
+  if (absDeltaX > absDeltaY) {
+    // Horizontal swipe
+    if (deltaX > 0) {
+      setDirection(1, 0); // Right
+    } else {
+      setDirection(-1, 0); // Left
+    }
+  } else {
+    // Vertical swipe
+    if (deltaY > 0) {
+      setDirection(0, 1); // Down
+    } else {
+      setDirection(0, -1); // Up
+    }
+  }
+}
+
 // ---- Input ----
 function setDirection(newDx, newDy) {
   if (gameOver) return;
@@ -676,23 +752,49 @@ document.addEventListener("keydown", (e) => {
     if (!gameOver) {
       paused = !paused;
       beep(300, 0.05, "square", 0.03);
+      vibrate(25);
       draw();
     }
   }
 });
 
-// Mobile buttons
+// Add touch event listeners for swipe gestures
+const canvas = document.getElementById("game");
+canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+// Prevent default touch behaviors on canvas
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
+
+// Mobile buttons with enhanced feedback
 function bindButton(id, dirFn) {
   const el = document.getElementById(id);
   if (!el) return;
+  
   const handler = (ev) => {
     ev.preventDefault();
+    ev.stopPropagation();
+    
     // Resume audio context on first interaction (mobile browsers)
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    
+    // Visual feedback
+    el.style.transform = "scale(0.9)";
+    setTimeout(() => {
+      el.style.transform = "";
+    }, 100);
+    
     dirFn();
   };
+  
+  // Use both click and touchstart for better responsiveness
   el.addEventListener("click", handler);
   el.addEventListener("touchstart", handler, { passive: false });
+  
+  // Prevent context menu on long press
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
 bindButton("up", () => setDirection(0, -1));
@@ -703,9 +805,27 @@ bindButton("pause", () => {
   if (!gameOver) {
     paused = !paused;
     beep(300, 0.05, "square", 0.03);
+    vibrate(25);
     draw();
   }
 });
+
+// Add orientation change handler for mobile
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => {
+    // Redraw after orientation change
+    draw();
+  }, 100);
+});
+
+// Prevent zoom on double tap
+document.addEventListener("touchend", (e) => {
+  const now = Date.now();
+  if (now - lastTouchTime < 300) {
+    e.preventDefault();
+  }
+  lastTouchTime = now;
+}, { passive: false });
 
 // Start
 resetGame();
