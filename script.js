@@ -38,6 +38,31 @@ let lastTouchTime = 0;
 const MIN_SWIPE_DISTANCE = 30;
 const MAX_SWIPE_TIME = 1000;
 
+// Smart UI system variables
+let currentTheme = 'dark';
+let autoPauseEnabled = true;
+let performanceMode = false;
+let lastFrameTime = performance.now();
+let frameCount = 0;
+let fps = 0;
+let isPageVisible = true;
+let gameStartTime = Date.now();
+let consecutiveGoldenApples = 0;
+let smartHintIndex = 0;
+let lastHintTime = 0;
+
+// Smart hints array
+const smartHints = [
+  "Try to get the golden apples for bonus points! ✨",
+  "Golden apples are worth 3 points each! 🏆",
+  "The game speeds up as you score more points! ⚡",
+  "Use swipe gestures for quick direction changes! 👆",
+  "Try to create efficient movement patterns! 🎯",
+  "Golden apples have a 15% spawn chance! 🎲",
+  "You're doing great! Keep up the rhythm! 🎵",
+  "Plan your moves ahead to avoid trapping yourself! 🧠"
+];
+
 // Haptic feedback function
 function vibrate(duration = 50) {
   try {
@@ -46,6 +71,120 @@ function vibrate(duration = 50) {
     }
   } catch (e) {
     // Vibration not supported, ignore
+  }
+}
+
+// ---- Smart UI System ----
+function updateFPS() {
+  const now = performance.now();
+  const delta = now - lastFrameTime;
+  frameCount++;
+  
+  if (frameCount % 10 === 0) {
+    fps = Math.round(1000 / delta);
+    if (!performanceMode) {
+      document.getElementById('perf-indicator').textContent = `FPS: ${fps}`;
+    }
+  }
+  lastFrameTime = now;
+}
+
+function adaptToPerformance() {
+  if (fps < 30 && !performanceMode) {
+    performanceMode = true;
+    document.getElementById('perf-mode').classList.add('active');
+    // Reduce visual effects for better performance
+    console.log('Performance mode activated');
+  }
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const hour = new Date().getHours();
+  
+  if (currentTheme === 'dark') {
+    // Auto-detect appropriate theme
+    if (hour >= 6 && hour < 18) {
+      currentTheme = 'light';
+      root.className = 'light-theme';
+    } else {
+      currentTheme = 'high-contrast';
+      root.className = 'high-contrast';
+    }
+  } else {
+    currentTheme = 'dark';
+    root.className = '';
+  }
+  
+  // Update theme button
+  const themeBtn = document.getElementById('theme-toggle');
+  themeBtn.textContent = currentTheme === 'light' ? '☀️' : currentTheme === 'high-contrast' ? '🔆' : '🌓';
+}
+
+function showSmartHint() {
+  const now = Date.now();
+  if (now - lastHintTime < 10000) return; // Don't show hints too frequently
+  
+  const hintElement = document.getElementById('smart-hint');
+  let hint = smartHints[smartHintIndex];
+  
+  // Context-aware hints
+  if (score > 0 && score % 5 === 0 && consecutiveGoldenApples >= 2) {
+    hint = "You're on a golden streak! Keep it up! 🔥";
+  } else if (score > 20) {
+    hint = "Expert level! You've mastered the basics! 👑";
+  } else if (snake.length > 15) {
+    hint = "Impressive snake length! Watch your tail! 🐍";
+  }
+  
+  hintElement.textContent = hint;
+  hintElement.classList.add('visible');
+  
+  setTimeout(() => {
+    hintElement.classList.remove('visible');
+  }, 4000);
+  
+  smartHintIndex = (smartHintIndex + 1) % smartHints.length;
+  lastHintTime = now;
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    isPageVisible = false;
+    if (autoPauseEnabled && !gameOver && !paused) {
+      paused = true;
+      draw(); // Update display to show paused state
+    }
+  } else {
+    isPageVisible = true;
+    // Game remains paused when tab becomes visible again
+    // Player needs to manually unpause
+  }
+}
+
+function initializeSmartTheme() {
+  const hour = new Date().getHours();
+  const root = document.documentElement;
+  
+  // Auto-set theme based on time of day
+  if (hour >= 6 && hour < 18) {
+    currentTheme = 'light';
+    root.className = 'light-theme';
+    document.getElementById('theme-toggle').textContent = '☀️';
+  } else {
+    currentTheme = 'dark';
+    root.className = '';
+    document.getElementById('theme-toggle').textContent = '🌓';
+  }
+}
+
+function updateSmartUI() {
+  updateFPS();
+  adaptToPerformance();
+  
+  // Show smart hints periodically
+  if (score > 0 && Math.random() < 0.02) { // 2% chance per frame
+    showSmartHint();
   }
 }
 
@@ -130,6 +269,7 @@ function gameLoop() {
   if (gameOver || paused) return;
   update();
   draw();
+  updateSmartUI(); // Smart UI updates
   directionLock = false; // allow next turn after movement happens
 }
 
@@ -162,12 +302,19 @@ function update() {
   if (newHead.x === food.x && newHead.y === food.y) {
     if (food.type === 'golden') {
       score += 3;
+      consecutiveGoldenApples++;
       playGoldenEat();
     } else {
       score++;
+      consecutiveGoldenApples = 0; // Reset golden streak
       playEat();
     }
     food = randomFood();
+
+    // Show smart hint on milestones
+    if (score % 10 === 0 || (food.type === 'golden' && consecutiveGoldenApples >= 2)) {
+      showSmartHint();
+    }
 
     // update speed as score grows
     startLoop();
@@ -818,6 +965,27 @@ window.addEventListener("orientationchange", () => {
   }, 100);
 });
 
+// Smart UI event listeners
+document.addEventListener('visibilitychange', handleVisibilityChange);
+
+// Initialize smart UI controls
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+document.getElementById('auto-pause').addEventListener('click', () => {
+  autoPauseEnabled = !autoPauseEnabled;
+  const btn = document.getElementById('auto-pause');
+  btn.classList.toggle('active', autoPauseEnabled);
+  btn.title = autoPauseEnabled ? 'Auto-pause enabled' : 'Auto-pause disabled';
+});
+
+document.getElementById('perf-mode').addEventListener('click', () => {
+  performanceMode = !performanceMode;
+  const btn = document.getElementById('perf-mode');
+  btn.classList.toggle('active', performanceMode);
+  const perfIndicator = document.getElementById('perf-indicator');
+  perfIndicator.style.display = performanceMode ? 'none' : 'block';
+});
+
 // Prevent zoom on double tap
 document.addEventListener("touchend", (e) => {
   const now = Date.now();
@@ -828,4 +996,6 @@ document.addEventListener("touchend", (e) => {
 }, { passive: false });
 
 // Start
+initializeSmartTheme();
+document.getElementById('auto-pause').classList.add('active'); // Auto-pause enabled by default
 resetGame();

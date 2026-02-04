@@ -7,6 +7,44 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Snake Game</title>
   <style>
+    :root {
+      --bg-primary: #111;
+      --bg-secondary: #000;
+      --border-color: #444;
+      --text-primary: #fff;
+      --text-secondary: #aaa;
+      --text-accent: #888;
+      --btn-bg: linear-gradient(135deg, #2a2a2a, #1b1b1b);
+      --btn-bg-active: linear-gradient(135deg, #1b1b1b, #0a0a0a);
+      --btn-border: #555;
+    }
+    
+    /* Light theme for daytime */
+    :root.light-theme {
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #fff;
+      --border-color: #ddd;
+      --text-primary: #333;
+      --text-secondary: #666;
+      --text-accent: #999;
+      --btn-bg: linear-gradient(135deg, #fff, #f0f0f0);
+      --btn-bg-active: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+      --btn-border: #ccc;
+    }
+    
+    /* High contrast theme for accessibility */
+    :root.high-contrast {
+      --bg-primary: #000;
+      --bg-secondary: #000;
+      --border-color: #fff;
+      --text-primary: #fff;
+      --text-secondary: #fff;
+      --text-accent: #fff;
+      --btn-bg: linear-gradient(135deg, #333, #000);
+      --btn-bg-active: linear-gradient(135deg, #000, #333);
+      --btn-border: #fff;
+    }
+
     body {
       display:flex;
       justify-content:center;
@@ -14,13 +52,14 @@
       min-height:100vh;
       margin:0;
       padding: 10px;
-      background:#111;
+      background: var(--bg-primary);
       font-family: Arial, sans-serif;
       user-select: none;
       -webkit-user-select: none;
       touch-action: manipulation;
       overflow-x: hidden;
       box-sizing: border-box;
+      transition: background 0.5s ease, color 0.5s ease;
     }
     .wrap {
       position: relative;
@@ -34,11 +73,44 @@
       width: 100%;
       max-width: 400px;
       height: auto;
-      background:#000;
-      border:2px solid #444;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
       display:block;
       aspect-ratio: 1;
       touch-action: manipulation;
+      transition: border-color 0.3s ease;
+    }
+
+    /* Smart UI Controls Panel */
+    .ui-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+    
+    .ui-btn {
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--text-primary);
+      border-radius: 20px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.8;
+    }
+    
+    .ui-btn:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    
+    .ui-btn.active {
+      background: #4caf50;
+      border-color: #388e3c;
     }
 
     /* Mobile controls */
@@ -52,9 +124,9 @@
       padding: 10px;
     }
     .btn {
-      border: 2px solid #555;
-      background: linear-gradient(135deg, #2a2a2a, #1b1b1b);
-      color: #fff;
+      border: 2px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--text-primary);
       border-radius: 18px;
       font-size: 28px;
       display:flex;
@@ -69,20 +141,47 @@
     .btn:active { 
       transform: scale(0.95); 
       box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      background: linear-gradient(135deg, #1b1b1b, #0a0a0a);
+      background: var(--btn-bg-active);
     }
     .btn:hover {
-      border-color: #666;
-      background: linear-gradient(135deg, #333, #222);
+      border-color: var(--btn-border);
+      filter: brightness(1.1);
     }
 
     .hint {
-      color: #aaa;
+      color: var(--text-secondary);
       font-size: 14px;
       text-align: center;
       margin-top: 15px;
       padding: 0 20px;
       line-height: 1.4;
+      transition: color 0.3s ease;
+    }
+
+    /* Smart contextual hints */
+    .smart-hint {
+      color: var(--text-accent);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-style: italic;
+    }
+    
+    .smart-hint.visible {
+      opacity: 0.9;
+    }
+    
+    /* Performance indicator */
+    .perf-indicator {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 10px;
+      color: var(--text-accent);
+      opacity: 0.6;
+      z-index: 100;
     }
 
     /* Responsive design for different screen sizes */
@@ -134,16 +233,27 @@
 
     /* Swipe instruction */
     .swipe-hint {
-      color: #888;
+      color: var(--text-accent);
       font-size: 11px;
       text-align: center;
       margin-top: 8px;
       opacity: 0.8;
+      transition: color 0.3s ease;
     }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- Smart UI Control Panel -->
+    <div class="ui-panel">
+      <button class="ui-btn" id="theme-toggle" title="Toggle Theme">🌓</button>
+      <button class="ui-btn" id="auto-pause" title="Auto-pause when tab inactive">⏸️</button>
+      <button class="ui-btn" id="perf-mode" title="Performance mode">⚡</button>
+    </div>
+    
+    <!-- Performance Indicator -->
+    <div class="perf-indicator" id="perf-indicator">FPS: --</div>
+    
     <canvas id="game" width="400" height="400"></canvas>
 
     <div class="controls" aria-label="Mobile Controls">
@@ -159,8 +269,7 @@
     </div>
 
     <p class="hint">Use arrow keys or buttons · Space to pause · R to restart</p>
-    <p class="swipe-hint">💡 Swipe on canvas to control direction</p>
-  </div>
+    <p class="swipe-hint">💡 Swipe on canvas to control direction</p>    <p class="smart-hint" id="smart-hint">Try to get the golden apples for bonus points! ✨</p>  </div>
 
   <script src="script.js"></script>
 </body>
