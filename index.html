@@ -45,6 +45,50 @@
       --btn-border: #fff;
     }
 
+    /* Sunset/Sunrise theme for golden hours */
+    :root.sunset-theme {
+      --bg-primary: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      --bg-secondary: rgba(255, 255, 255, 0.1);
+      --border-color: #ffbe0b;
+      --text-primary: #fff;
+      --text-secondary: #ffe8cc;
+      --text-accent: #ffd60a;
+      --btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+      --btn-bg-active: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+      --btn-border: #ffbe0b;
+    }
+
+    /* Blue hour theme for early morning/evening */
+    :root.blue-hour-theme {
+      --bg-primary: linear-gradient(135deg, #1e3c72, #2a5298);
+      --bg-secondary: rgba(255, 255, 255, 0.05);
+      --border-color: #74c0fc;
+      --text-primary: #fff;
+      --text-secondary: #a5d8ff;
+      --text-accent: #74c0fc;
+      --btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+      --btn-bg-active: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+      --btn-border: #74c0fc;
+    }
+
+    /* Battery saver theme (minimal animations, darker) */
+    :root.battery-saver {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #000;
+      --border-color: #333;
+      --text-primary: #ccc;
+      --text-secondary: #888;
+      --text-accent: #666;
+      --btn-bg: #1a1a1a;
+      --btn-bg-active: #0f0f0f;
+      --btn-border: #333;
+    }
+
+    /* Dynamic background transition */
+    body.theme-transition {
+      transition: background 1s ease-in-out;
+    }
+
     body {
       display:flex;
       justify-content:center;
@@ -101,6 +145,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
       opacity: 0.8;
+      position: relative;
     }
     
     .ui-btn:hover {
@@ -111,6 +156,24 @@
     .ui-btn.active {
       background: #4caf50;
       border-color: #388e3c;
+    }
+
+    /* Theme status indicator */
+    .theme-indicator {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-accent);
+      opacity: 0.6;
+    }
+
+    .theme-indicator.auto {
+      background: #4caf50;
+      opacity: 1;
     }
 
     /* Mobile controls */
@@ -246,7 +309,10 @@
   <div class="wrap">
     <!-- Smart UI Control Panel -->
     <div class="ui-panel">
-      <button class="ui-btn" id="theme-toggle" title="Toggle Theme">🌓</button>
+      <button class="ui-btn" id="theme-toggle" title="Toggle Theme">
+        🌓
+        <div class="theme-indicator" id="theme-indicator"></div>
+      </button>
       <button class="ui-btn" id="auto-pause" title="Auto-pause when tab inactive">⏸️</button>
       <button class="ui-btn" id="perf-mode" title="Performance mode">⚡</button>
     </div>

@@ -39,7 +39,8 @@ const MIN_SWIPE_DISTANCE = 30;
 const MAX_SWIPE_TIME = 1000;
 
 // Smart UI system variables
-let currentTheme = 'dark';
+let currentTheme = 'auto';
+let manualThemeOverride = false;
 let autoPauseEnabled = true;
 let performanceMode = false;
 let lastFrameTime = performance.now();
@@ -50,6 +51,11 @@ let gameStartTime = Date.now();
 let consecutiveGoldenApples = 0;
 let smartHintIndex = 0;
 let lastHintTime = 0;
+let userLocation = null;
+let batteryStatus = null;
+let themeHistory = [];
+let lastThemeCheck = 0;
+const THEME_CHECK_INTERVAL = 60000; // Check theme every minute
 
 // Smart hints array
 const smartHints = [
@@ -98,27 +104,145 @@ function adaptToPerformance() {
   }
 }
 
-function toggleTheme() {
-  const root = document.documentElement;
-  const hour = new Date().getHours();
+// ---- Advanced Theme System ----
+function getOptimalTheme() {
+  if (manualThemeOverride) return currentTheme;
   
-  if (currentTheme === 'dark') {
-    // Auto-detect appropriate theme
-    if (hour >= 6 && hour < 18) {
-      currentTheme = 'light';
-      root.className = 'light-theme';
-    } else {
-      currentTheme = 'high-contrast';
-      root.className = 'high-contrast';
-    }
-  } else {
-    currentTheme = 'dark';
-    root.className = '';
+  const now = new Date();
+  const hour = now.getHours();
+  const month = now.getMonth(); // 0-11
+  
+  // Battery optimization
+  if (batteryStatus && batteryStatus.level < 0.2 && !batteryStatus.charging) {
+    return 'battery-saver';
   }
   
-  // Update theme button
+  // Seasonal adjustments
+  const isWinter = month >= 11 || month <= 1;
+  const isSummer = month >= 5 && month <= 7;
+  
+  // Golden hour detection (sunrise/sunset)
+  if ((hour >= 6 && hour <= 7) || (hour >= 17 && hour <= 19)) {
+    return isWinter ? 'blue-hour-theme' : 'sunset-theme';
+  }
+  
+  // Blue hour (twilight)
+  if (hour === 5 || hour === 20) {
+    return 'blue-hour-theme';
+  }
+  
+  // Standard day/night cycle
+  if (hour >= 8 && hour <= 16) {
+    return 'light';
+  } else {
+    return 'dark';
+  }
+}
+
+function applyTheme(themeName) {
+  const root = document.documentElement;
   const themeBtn = document.getElementById('theme-toggle');
-  themeBtn.textContent = currentTheme === 'light' ? '☀️' : currentTheme === 'high-contrast' ? '🔆' : '🌓';
+  const indicator = document.getElementById('theme-indicator');
+  
+  // Add transition class
+  document.body.classList.add('theme-transition');
+  
+  // Remove all theme classes
+  root.className = '';
+  
+  // Apply new theme
+  switch(themeName) {
+    case 'light':
+      root.className = 'light-theme';
+      themeBtn.textContent = '☀️';
+      break;
+    case 'high-contrast':
+      root.className = 'high-contrast';
+      themeBtn.textContent = '🔆';
+      break;
+    case 'sunset-theme':
+      root.className = 'sunset-theme';
+      themeBtn.textContent = '🌅';
+      break;
+    case 'blue-hour-theme':
+      root.className = 'blue-hour-theme';
+      themeBtn.textContent = '🌆';
+      break;
+    case 'battery-saver':
+      root.className = 'battery-saver';
+      themeBtn.textContent = '🔋';
+      break;
+    default: // dark
+      root.className = '';
+      themeBtn.textContent = '🌓';
+  }
+  
+  // Update indicator
+  indicator.className = 'theme-indicator' + (manualThemeOverride ? '' : ' auto');
+  
+  // Remove transition class after animation
+  setTimeout(() => {
+    document.body.classList.remove('theme-transition');
+  }, 1000);
+  
+  currentTheme = themeName;
+  
+  // Save to localStorage
+  if (manualThemeOverride) {
+    localStorage.setItem('snakeGameTheme', themeName);
+  }
+}
+
+function toggleTheme() {
+  const themes = ['dark', 'light', 'high-contrast', 'sunset-theme', 'blue-hour-theme'];
+  
+  if (!manualThemeOverride) {
+    // First click enables manual override
+    manualThemeOverride = true;
+    currentTheme = 'dark';
+  }
+  
+  const currentIndex = themes.indexOf(currentTheme);
+  const nextTheme = themes[(currentIndex + 1) % themes.length];
+  
+  // Special double-click to return to auto mode
+  if (Date.now() - (window.lastThemeClick || 0) < 500) {
+    manualThemeOverride = false;
+    currentTheme = 'auto';
+    autoUpdateTheme();
+    localStorage.removeItem('snakeGameTheme');
+    return;
+  }
+  
+  window.lastThemeClick = Date.now();
+  applyTheme(nextTheme);
+}
+
+function autoUpdateTheme() {
+  if (manualThemeOverride) return;
+  
+  const optimalTheme = getOptimalTheme();
+  if (optimalTheme !== currentTheme) {
+    applyTheme(optimalTheme);
+  }
+}
+
+function checkBatteryStatus() {
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then(battery => {
+      batteryStatus = {
+        level: battery.level,
+        charging: battery.charging
+      };
+      
+      // Auto-switch to battery saver if low battery
+      if (!manualThemeOverride && battery.level < 0.15 && !battery.charging) {
+        applyTheme('battery-saver');
+      }
+    }).catch(() => {
+      // Battery API not available
+    });
+  }
 }
 
 function showSmartHint() {
@@ -163,24 +287,42 @@ function handleVisibilityChange() {
 }
 
 function initializeSmartTheme() {
-  const hour = new Date().getHours();
-  const root = document.documentElement;
-  
-  // Auto-set theme based on time of day
-  if (hour >= 6 && hour < 18) {
-    currentTheme = 'light';
-    root.className = 'light-theme';
-    document.getElementById('theme-toggle').textContent = '☀️';
+  // Check for saved theme preference
+  const savedTheme = localStorage.getItem('snakeGameTheme');
+  if (savedTheme) {
+    manualThemeOverride = true;
+    applyTheme(savedTheme);
   } else {
-    currentTheme = 'dark';
-    root.className = '';
-    document.getElementById('theme-toggle').textContent = '🌓';
+    // Auto-detect optimal theme
+    manualThemeOverride = false;
+    currentTheme = 'auto';
+    autoUpdateTheme();
   }
+  
+  // Initialize battery monitoring
+  checkBatteryStatus();
+  
+  // Set up periodic theme updates
+  setInterval(() => {
+    if (!manualThemeOverride) {
+      autoUpdateTheme();
+    }
+    checkBatteryStatus();
+  }, THEME_CHECK_INTERVAL);
 }
 
 function updateSmartUI() {
   updateFPS();
   adaptToPerformance();
+  
+  // Periodic theme optimization check
+  const now = Date.now();
+  if (now - lastThemeCheck > THEME_CHECK_INTERVAL) {
+    if (!manualThemeOverride) {
+      autoUpdateTheme();
+    }
+    lastThemeCheck = now;
+  }
   
   // Show smart hints periodically
   if (score > 0 && Math.random() < 0.02) { // 2% chance per frame
