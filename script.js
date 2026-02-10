@@ -466,7 +466,33 @@ function update() {
 }
 
 // ---- Drawing ----
+const nightStars = [
+  { x: 40, y: 40, r: 1.5, a: 0.7 },
+  { x: 120, y: 70, r: 1, a: 0.6 },
+  { x: 210, y: 35, r: 1.2, a: 0.8 },
+  { x: 320, y: 60, r: 1.4, a: 0.7 },
+  { x: 360, y: 120, r: 1, a: 0.6 },
+  { x: 70, y: 160, r: 1.1, a: 0.7 },
+  { x: 180, y: 140, r: 1.3, a: 0.8 },
+  { x: 280, y: 180, r: 1.2, a: 0.7 },
+  { x: 330, y: 240, r: 1, a: 0.6 },
+  { x: 110, y: 260, r: 1.4, a: 0.7 }
+];
+
 function drawBackground() {
+  if (
+    currentTheme === 'dark' ||
+    currentTheme === 'blue-hour-theme' ||
+    currentTheme === 'battery-saver' ||
+    currentTheme === 'high-contrast'
+  ) {
+    drawNightBackground();
+  } else {
+    drawGrassBackground();
+  }
+}
+
+function drawGrassBackground() {
   // Clean light green base color
   ctx.fillStyle = "#7cb342";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -494,7 +520,7 @@ function drawBackground() {
     {x: 40, y: 320}, {x: 200, y: 320}, {x: 80, y: 180}
   ];
   
-  grassPatches.forEach((patch, i) => {
+  grassPatches.forEach((patch) => {
     // Small grass blades - simple and clean
     ctx.strokeStyle = "#558b2f";
     ctx.lineWidth = 1;
@@ -509,6 +535,38 @@ function drawBackground() {
       ctx.lineTo(grassX + Math.random() - 0.5, grassY - height);
       ctx.stroke();
     }
+  });
+}
+
+function drawNightBackground() {
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, "#0b1d39");
+  gradient.addColorStop(1, "#102027");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Soft grid lines to keep structure visible
+  ctx.strokeStyle = "rgba(120, 144, 156, 0.18)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= canvas.width; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  
+  // Fixed stars for a calm night feel
+  nightStars.forEach((star) => {
+    ctx.fillStyle = `rgba(255, 255, 255, ${star.a})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+    ctx.fill();
   });
 }
 
